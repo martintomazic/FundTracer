@@ -6,9 +6,10 @@ contract("ABO", (accounts) => {
         abo = await ABO.new();
     });
     it("should whitelist", async () => {
-        assert(true);
-        await abo.whitelistNgo(ngo1, {from: master});
-        //assert(abo.ngoWallets[ngo1]);
+        //assert(true);
+        const result = await abo.whitelistNgo(ngo1);
+        assert.equal(result.receipt.status, true);     
+        //assert.equal(abo.ngoWallets[ngo1],true);
         //assert(abo.ngoWallets[ngo2]);
     })
 })

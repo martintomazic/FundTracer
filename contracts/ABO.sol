@@ -4,11 +4,11 @@
 pragma solidity >=0.7.0 <0.9.0;
 pragma abicoder v2;
 
+import "./ownable.sol";
 
 // Creating a contract
-contract ABO {	
+contract ABO is Ownable {	
     // Declaring variable
-    address public betterOcean = 0x86D15B422D924D9115986Dd7A87ee794CAF2cbaF;
     mapping (address => bool) public ngoWallets;
     mapping (uint => abo_contract) public projectIdToContract;
     mapping (uint => ngoEvent) public eventIdToNgoEvent;
@@ -37,17 +37,12 @@ contract ABO {
 
     // abo_contract[] public abo_contracts;
 
-    modifier isBetterOcean() {
-        require(msg.sender == betterOcean);
-        _;
-    }
-
     modifier isValidNgo() {
         require(ngoWallets[msg.sender]);
         _;
     }
 
-    function whitelistNgo(address _ngoAddress) isBetterOcean public {
+    function whitelistNgo(address _ngoAddress) onlyOwner() public {
         ngoWallets[_ngoAddress] = true;
     }
 
@@ -72,7 +67,7 @@ contract ABO {
         address ngoAddress  = projectIdToContract[_projectId].ngoAddress;
         payable(ngoAddress).transfer(ngoAmount);
         // make a payment ABO
-        payable(betterOcean).transfer(aboFee);
+        payable(owner()).transfer(aboFee);
         abo_contract storage myContract = projectIdToContract[_projectId];
         myContract.donorAddress = msg.sender;
     } 
