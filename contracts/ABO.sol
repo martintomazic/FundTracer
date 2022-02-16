@@ -60,7 +60,10 @@ contract ABO is Ownable {
     }
 
     function donate(uint _projectId) public payable{
-        require(msg.value == projectIdToContract[_projectId].donation * (1 ether));        
+        abo_contract storage myContract = projectIdToContract[_projectId];
+        require(myContract.donorAddress == address(0));  //check that nobody has already donated to this contract 
+        require(msg.value == projectIdToContract[_projectId].donation * (1 ether));  //check that the right amount is donated
+              
         uint aboFee = msg.value * aboFeeInPercent / 100; 
         uint ngoAmount = msg.value - aboFee; 
         // make a payment to NGO
@@ -68,11 +71,14 @@ contract ABO is Ownable {
         payable(ngoAddress).transfer(ngoAmount);
         // make a payment ABO
         payable(owner()).transfer(aboFee);
-        abo_contract storage myContract = projectIdToContract[_projectId];
+        
         myContract.donorAddress = msg.sender;
     } 
 
     function logNgoEvent(uint _projectId, string memory _pointerToRealLiveData) public isValidNgo {
+        abo_contract storage myContract = projectIdToContract[_projectId]; //this causes an error if the contract does not exists, which is nice, but should be put into some kind of requirement statement
+        require(myContract.ngoAddress == msg.sender);  //check logger is the creator of the project
+        require(myContract.donorAddress != address(0));  //check that funds already arrived for this project
         uint eventId = nextEventId++;
         eventIdToNgoEvent[eventId] = ngoEvent(eventId, _projectId, msg.sender, _pointerToRealLiveData);
 
