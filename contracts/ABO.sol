@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
-// Solidity program to demonstrate
-// how to create a contract
 pragma solidity >=0.7.0 <0.9.0;
 pragma abicoder v2;
 
+import "./ownable.sol";
 
 // Creating a contract
-contract ABO {	
+contract ABO is Ownable {	
     // Declaring variable
-    address public betterOcean = 0x86D15B422D924D9115986Dd7A87ee794CAF2cbaF;
     mapping (address => bool) public ngoWallets;
     mapping (uint => abo_contract) public projectIdToContract;
     mapping (uint => ngoEvent) public eventIdToNgoEvent;
@@ -37,17 +35,12 @@ contract ABO {
 
     // abo_contract[] public abo_contracts;
 
-    modifier isBetterOcean() {
-        require(msg.sender == betterOcean);
-        _;
-    }
-
     modifier isValidNgo() {
         require(ngoWallets[msg.sender]);
         _;
     }
 
-    function whitelistNgo(address _ngoAddress) isBetterOcean public {
+    function whitelistNgo(address _ngoAddress) onlyOwner() public {
         ngoWallets[_ngoAddress] = true;
     }
 
@@ -65,19 +58,25 @@ contract ABO {
     }
 
     function donate(uint _projectId) public payable{
-        require(msg.value == projectIdToContract[_projectId].donation * (1 ether));        
+        abo_contract storage myContract = projectIdToContract[_projectId];
+        require(myContract.donorAddress == address(0));  //check that nobody has already donated to this contract 
+        require(msg.value == projectIdToContract[_projectId].donation * (1 ether));  //check that the right amount is donated
+              
         uint aboFee = msg.value * aboFeeInPercent / 100; 
         uint ngoAmount = msg.value - aboFee; 
         // make a payment to NGO
         address ngoAddress  = projectIdToContract[_projectId].ngoAddress;
         payable(ngoAddress).transfer(ngoAmount);
         // make a payment ABO
-        payable(betterOcean).transfer(aboFee);
-        abo_contract storage myContract = projectIdToContract[_projectId];
+        payable(owner()).transfer(aboFee);
+        
         myContract.donorAddress = msg.sender;
     } 
 
     function logNgoEvent(uint _projectId, string memory _pointerToRealLiveData) public isValidNgo {
+        abo_contract storage myContract = projectIdToContract[_projectId]; //this causes an error if the contract does not exists, which is nice, but should be put into some kind of requirement statement
+        require(myContract.ngoAddress == msg.sender);  //check logger is the creator of the project
+        require(myContract.donorAddress != address(0));  //check that funds already arrived for this project
         uint eventId = nextEventId++;
         eventIdToNgoEvent[eventId] = ngoEvent(eventId, _projectId, msg.sender, _pointerToRealLiveData);
 
